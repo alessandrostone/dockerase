@@ -167,3 +167,46 @@ pub fn print_dry_run_header() {
     println!("{}", "[DRY RUN] No changes will be made".yellow().bold());
     println!();
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_format_bytes_zero() {
+        assert_eq!(format_bytes(0), "0 B");
+    }
+
+    #[test]
+    fn test_format_bytes_small() {
+        let result = format_bytes(500);
+        assert!(result.contains("500"));
+        assert!(result.contains("B"));
+    }
+
+    #[test]
+    fn test_format_bytes_kilobytes() {
+        let result = format_bytes(5_000);
+        assert!(result.contains("KB"));
+    }
+
+    #[test]
+    fn test_format_bytes_megabytes() {
+        let result = format_bytes(5_000_000);
+        assert!(result.contains("MB"));
+    }
+
+    #[test]
+    fn test_format_bytes_gigabytes() {
+        let result = format_bytes(5_000_000_000);
+        assert!(result.contains("GB"));
+    }
+
+    #[test]
+    fn test_format_bytes_is_human_readable() {
+        // Large numbers should not be displayed as raw bytes
+        let result = format_bytes(1_000_000_000);
+        assert!(!result.contains("1000000000"));
+        assert!(result.contains("MB") || result.contains("GB"));
+    }
+}

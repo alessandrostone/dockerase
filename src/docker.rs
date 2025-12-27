@@ -313,4 +313,59 @@ mod tests {
         assert_eq!(parse_reclaimable("1.2GB (50%)"), 1_200_000_000);
         assert_eq!(parse_reclaimable("500MB (100%)"), 500_000_000);
     }
+
+    #[test]
+    fn test_parse_size_invalid_input() {
+        assert_eq!(parse_size("invalid"), 0);
+        assert_eq!(parse_size("abc"), 0);
+        assert_eq!(parse_size("GB"), 0);
+    }
+
+    #[test]
+    fn test_parse_size_decimal_precision() {
+        assert_eq!(parse_size("1.234GB"), 1_234_000_000);
+        assert_eq!(parse_size("0.5MB"), 500_000);
+        assert_eq!(parse_size("0.001GB"), 1_000_000);
+    }
+
+    #[test]
+    fn test_parse_size_large_values() {
+        assert_eq!(parse_size("100GB"), 100_000_000_000);
+        assert_eq!(parse_size("999GB"), 999_000_000_000);
+    }
+
+    #[test]
+    fn test_image_deserialize() {
+        let json = r#"{"ID":"sha256:abc123","Repository":"alpine","Tag":"latest","Size":"5.5MB","CreatedAt":"2024-01-01"}"#;
+        let image: Image = serde_json::from_str(json).unwrap();
+        assert_eq!(image.id, "sha256:abc123");
+        assert_eq!(image.repository, "alpine");
+        assert_eq!(image.tag, "latest");
+    }
+
+    #[test]
+    fn test_container_deserialize() {
+        let json = r#"{"ID":"abc123","Names":"my-container","Image":"alpine","State":"running","Status":"Up 1 hour","Size":"0B"}"#;
+        let container: Container = serde_json::from_str(json).unwrap();
+        assert_eq!(container.id, "abc123");
+        assert_eq!(container.names, "my-container");
+        assert!(container.is_running());
+    }
+
+    #[test]
+    fn test_volume_deserialize() {
+        let json = r#"{"Name":"my-volume","Driver":"local","Mountpoint":"/var/lib/docker/volumes/my-volume/_data"}"#;
+        let volume: Volume = serde_json::from_str(json).unwrap();
+        assert_eq!(volume.name, "my-volume");
+        assert_eq!(volume.driver, "local");
+    }
+
+    #[test]
+    fn test_network_deserialize() {
+        let json = r#"{"ID":"net123","Name":"my-network","Driver":"bridge","Scope":"local"}"#;
+        let network: Network = serde_json::from_str(json).unwrap();
+        assert_eq!(network.id, "net123");
+        assert_eq!(network.name, "my-network");
+        assert!(!network.is_default());
+    }
 }
