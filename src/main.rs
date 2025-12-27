@@ -54,6 +54,16 @@ enum Commands {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Interactively select which resources to purge
+    Select {
+        /// Skip confirmation prompts (select all)
+        #[arg(short, long)]
+        force: bool,
+
+        /// Show what would be removed without making changes
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 fn main() -> ExitCode {
@@ -65,6 +75,9 @@ fn main() -> ExitCode {
         match cli.command {
             Some(Commands::Purge { force, dry_run }) => {
                 commands::purge::run(force || cli.force, dry_run || cli.dry_run)
+            }
+            Some(Commands::Select { force, dry_run }) => {
+                commands::select::run(force || cli.force, dry_run || cli.dry_run)
             }
             None => commands::list::run(),
         }
