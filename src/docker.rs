@@ -257,3 +257,60 @@ fn parse_reclaimable(s: &str) -> u64 {
     let size_part = s.split('(').next().unwrap_or(s).trim();
     parse_size(size_part)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_size_zero() {
+        assert_eq!(parse_size("0"), 0);
+        assert_eq!(parse_size("0B"), 0);
+        assert_eq!(parse_size(""), 0);
+    }
+
+    #[test]
+    fn test_parse_size_bytes() {
+        assert_eq!(parse_size("100B"), 100);
+        assert_eq!(parse_size("1B"), 1);
+    }
+
+    #[test]
+    fn test_parse_size_kilobytes() {
+        assert_eq!(parse_size("1kB"), 1_000);
+        assert_eq!(parse_size("1KB"), 1_000);
+        assert_eq!(parse_size("1.5kB"), 1_500);
+    }
+
+    #[test]
+    fn test_parse_size_megabytes() {
+        assert_eq!(parse_size("1MB"), 1_000_000);
+        assert_eq!(parse_size("1.5MB"), 1_500_000);
+        assert_eq!(parse_size("100MB"), 100_000_000);
+    }
+
+    #[test]
+    fn test_parse_size_gigabytes() {
+        assert_eq!(parse_size("1GB"), 1_000_000_000);
+        assert_eq!(parse_size("1.5GB"), 1_500_000_000);
+        assert_eq!(parse_size("12.5GB"), 12_500_000_000);
+    }
+
+    #[test]
+    fn test_parse_size_with_whitespace() {
+        assert_eq!(parse_size("  1GB  "), 1_000_000_000);
+        assert_eq!(parse_size(" 100MB "), 100_000_000);
+    }
+
+    #[test]
+    fn test_parse_reclaimable_simple() {
+        assert_eq!(parse_reclaimable("1GB"), 1_000_000_000);
+        assert_eq!(parse_reclaimable("500MB"), 500_000_000);
+    }
+
+    #[test]
+    fn test_parse_reclaimable_with_percentage() {
+        assert_eq!(parse_reclaimable("1.2GB (50%)"), 1_200_000_000);
+        assert_eq!(parse_reclaimable("500MB (100%)"), 500_000_000);
+    }
+}

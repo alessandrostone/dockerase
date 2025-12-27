@@ -111,3 +111,82 @@ impl DiskUsage {
             + self.build_cache_reclaimable
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_container(state: &str) -> Container {
+        Container {
+            id: "abc123".to_string(),
+            names: "test".to_string(),
+            image: "alpine".to_string(),
+            state: state.to_string(),
+            status: "Up 1 hour".to_string(),
+            size: "0B".to_string(),
+        }
+    }
+
+    fn make_network(name: &str) -> Network {
+        Network {
+            id: "net123".to_string(),
+            name: name.to_string(),
+            driver: "bridge".to_string(),
+            scope: "local".to_string(),
+        }
+    }
+
+    #[test]
+    fn test_container_is_running() {
+        let running = make_container("running");
+        let exited = make_container("exited");
+        let created = make_container("created");
+
+        assert!(running.is_running());
+        assert!(!exited.is_running());
+        assert!(!created.is_running());
+    }
+
+    #[test]
+    fn test_network_is_default() {
+        assert!(make_network("bridge").is_default());
+        assert!(make_network("host").is_default());
+        assert!(make_network("none").is_default());
+        assert!(!make_network("my-network").is_default());
+        assert!(!make_network("custom_net").is_default());
+    }
+
+    #[test]
+    fn test_disk_usage_total_size() {
+        let usage = DiskUsage {
+            images_size: 1_000_000_000,
+            containers_size: 500_000_000,
+            volumes_size: 250_000_000,
+            build_cache_size: 100_000_000,
+            ..Default::default()
+        };
+
+        assert_eq!(usage.total_size(), 1_850_000_000);
+    }
+
+    #[test]
+    fn test_disk_usage_total_reclaimable() {
+        let usage = DiskUsage {
+            images_reclaimable: 800_000_000,
+            containers_reclaimable: 400_000_000,
+            volumes_reclaimable: 200_000_000,
+            build_cache_reclaimable: 100_000_000,
+            ..Default::default()
+        };
+
+        assert_eq!(usage.total_reclaimable(), 1_500_000_000);
+    }
+
+    #[test]
+    fn test_disk_usage_default() {
+        let usage = DiskUsage::default();
+
+        assert_eq!(usage.total_size(), 0);
+        assert_eq!(usage.total_reclaimable(), 0);
+    }
+}
