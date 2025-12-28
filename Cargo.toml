@@ -4,12 +4,33 @@ version = "0.1.0"
 edition = "2021"
 description = "Docker cleaning utility CLI"
 license = "MIT"
+repository = "https://github.com/alessandrostone/dockerase"
+readme = "README.md"
+
+[[bin]]
+name = "dockerase"
+path = "src/main.rs"
+
+[package.metadata.dist]
+# Target platforms to build for
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
+# Enable Homebrew tap
+installers = ["shell", "homebrew"]
+# Tap location (you'll need to create this repo)
+tap = "alessandrostone/homebrew-tap"
+# Publish jobs to run in CI
+publish-jobs = ["homebrew"]
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 colored = "2"
-tabled = "0.15"
+comfy-table = "7"
 bytesize = "1"
 dialoguer = "0.11"
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"

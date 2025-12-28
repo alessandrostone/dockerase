@@ -1,17 +1,7 @@
 use crate::resources::DiskUsage;
 use bytesize::ByteSize;
 use colored::Colorize;
-use tabled::{settings::Style, Table, Tabled};
-
-#[derive(Tabled)]
-struct UsageRow {
-    #[tabled(rename = "TYPE")]
-    resource_type: String,
-    #[tabled(rename = "TOTAL")]
-    total: String,
-    #[tabled(rename = "RECLAIMABLE")]
-    reclaimable: String,
-}
+use comfy_table::{presets::UTF8_BORDERS_ONLY, Table};
 
 pub fn format_bytes(bytes: u64) -> String {
     ByteSize::b(bytes).to_string()
@@ -23,46 +13,49 @@ pub fn print_header() {
 }
 
 pub fn print_disk_usage(usage: &DiskUsage) {
-    let rows = vec![
-        UsageRow {
-            resource_type: "Images".to_string(),
-            total: format_bytes(usage.images_size),
-            reclaimable: format!(
-                "{} ({} unused)",
-                format_bytes(usage.images_reclaimable),
-                usage.images_count.saturating_sub(usage.images_active)
-            ),
-        },
-        UsageRow {
-            resource_type: "Containers".to_string(),
-            total: format_bytes(usage.containers_size),
-            reclaimable: format!(
-                "{} ({} stopped)",
-                format_bytes(usage.containers_reclaimable),
-                usage
-                    .containers_count
-                    .saturating_sub(usage.containers_active)
-            ),
-        },
-        UsageRow {
-            resource_type: "Volumes".to_string(),
-            total: format_bytes(usage.volumes_size),
-            reclaimable: format!(
-                "{} ({} unused)",
-                format_bytes(usage.volumes_reclaimable),
-                usage.volumes_count.saturating_sub(usage.volumes_active)
-            ),
-        },
-        UsageRow {
-            resource_type: "Build Cache".to_string(),
-            total: format_bytes(usage.build_cache_size),
-            reclaimable: format_bytes(usage.build_cache_reclaimable),
-        },
-    ];
+    let mut table = Table::new();
+    table.load_preset(UTF8_BORDERS_ONLY);
+    table.set_header(vec!["TYPE", "TOTAL", "RECLAIMABLE"]);
 
-    let table = Table::new(rows).with(Style::rounded()).to_string();
+    table.add_row(vec![
+        "Images".to_string(),
+        format_bytes(usage.images_size),
+        format!(
+            "{} ({} unused)",
+            format_bytes(usage.images_reclaimable),
+            usage.images_count.saturating_sub(usage.images_active)
+        ),
+    ]);
 
-    println!("{}", table);
+    table.add_row(vec![
+        "Containers".to_string(),
+        format_bytes(usage.containers_size),
+        format!(
+            "{} ({} stopped)",
+            format_bytes(usage.containers_reclaimable),
+            usage
+                .containers_count
+                .saturating_sub(usage.containers_active)
+        ),
+    ]);
+
+    table.add_row(vec![
+        "Volumes".to_string(),
+        format_bytes(usage.volumes_size),
+        format!(
+            "{} ({} unused)",
+            format_bytes(usage.volumes_reclaimable),
+            usage.volumes_count.saturating_sub(usage.volumes_active)
+        ),
+    ]);
+
+    table.add_row(vec![
+        "Build Cache".to_string(),
+        format_bytes(usage.build_cache_size),
+        format_bytes(usage.build_cache_reclaimable),
+    ]);
+
+    println!("{table}");
     println!();
     println!(
         "{} {}",

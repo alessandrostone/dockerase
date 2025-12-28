@@ -1,4 +1,6 @@
-use crate::display::{format_bytes, print_error, print_info, print_space_saved, print_success, print_warning};
+use crate::display::{
+    format_bytes, print_error, print_info, print_space_saved, print_success, print_warning,
+};
 use crate::docker::Docker;
 use colored::Colorize;
 use dialoguer::MultiSelect;
@@ -19,10 +21,7 @@ pub fn run(force: bool, dry_run: bool) -> Result<(), String> {
     let stopped: Vec<_> = containers.iter().filter(|c| !c.is_running()).collect();
     if !stopped.is_empty() {
         items.push(PurgeItem {
-            label: format!(
-                "Stopped containers ({} containers)",
-                stopped.len()
-            ),
+            label: format!("Stopped containers ({} containers)", stopped.len()),
             category: Category::Containers,
         });
     }
@@ -136,7 +135,8 @@ pub fn run(force: bool, dry_run: bool) -> Result<(), String> {
     }
 
     // Execute selected purges
-    let selected_categories: Vec<Category> = selections.iter().map(|&i| items[i].category).collect();
+    let selected_categories: Vec<Category> =
+        selections.iter().map(|&i| items[i].category).collect();
 
     // Check for conflicts (can't do both dangling and all images)
     let has_all_images = selected_categories.contains(&Category::AllImages);
