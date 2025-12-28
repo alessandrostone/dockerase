@@ -1,5 +1,10 @@
 # dockerase
 
+[![CI](https://github.com/alessandrostone/dockerase/actions/workflows/ci.yml/badge.svg)](https://github.com/alessandrostone/dockerase/actions/workflows/ci.yml)
+[![Release](https://github.com/alessandrostone/dockerase/actions/workflows/release.yml/badge.svg)](https://github.com/alessandrostone/dockerase/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub release](https://img.shields.io/github/v/release/alessandrostone/dockerase)](https://github.com/alessandrostone/dockerase/releases)
+
 ```
  ___     ___      __  __  _    ___  ____    ____  _____   ___
 |   \   /   \    /  ]|  l/ ]  /  _]|    \  /    T/ ___/  /  _]
