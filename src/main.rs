@@ -2,6 +2,7 @@ mod commands;
 mod display;
 mod docker;
 mod resources;
+mod system;
 
 use clap::{Parser, Subcommand};
 use display::print_error;
@@ -64,6 +65,43 @@ enum Commands {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Manage macOS system caches (Homebrew, npm, Xcode, etc.)
+    System {
+        #[command(subcommand)]
+        action: Option<SystemAction>,
+
+        /// Skip confirmation prompts
+        #[arg(short, long)]
+        force: bool,
+
+        /// Show what would be removed without making changes
+        #[arg(long)]
+        dry_run: bool,
+    },
+}
+
+#[derive(Subcommand)]
+enum SystemAction {
+    /// Purge all system caches
+    Purge {
+        /// Skip confirmation prompts
+        #[arg(short, long)]
+        force: bool,
+
+        /// Show what would be removed without making changes
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Interactively select which system caches to purge
+    Select {
+        /// Skip confirmation prompts (select all)
+        #[arg(short, long)]
+        force: bool,
+
+        /// Show what would be removed without making changes
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 fn main() -> ExitCode {
@@ -79,6 +117,29 @@ fn main() -> ExitCode {
             Some(Commands::Select { force, dry_run }) => {
                 commands::select::run(force || cli.force, dry_run || cli.dry_run)
             }
+            Some(Commands::System {
+                action,
+                force,
+                dry_run,
+            }) => match action {
+                Some(SystemAction::Purge {
+                    force: purge_force,
+                    dry_run: purge_dry_run,
+                }) => commands::system::purge(
+                    force || purge_force || cli.force,
+                    dry_run || purge_dry_run || cli.dry_run,
+                    false, // not interactive
+                ),
+                Some(SystemAction::Select {
+                    force: select_force,
+                    dry_run: select_dry_run,
+                }) => commands::system::purge(
+                    force || select_force || cli.force,
+                    dry_run || select_dry_run || cli.dry_run,
+                    true, // interactive
+                ),
+                None => commands::system::list(),
+            },
             None => commands::list::run(),
         }
     };
