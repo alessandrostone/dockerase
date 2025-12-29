@@ -2,10 +2,13 @@
 name = "dockerase"
 version = "0.1.0"
 edition = "2021"
+authors = ["Alessandro Stone Aresta <performerstone@gmail.com>"]
 description = "Docker cleaning utility CLI"
 license = "MIT"
 repository = "https://github.com/alessandrostone/dockerase"
 readme = "README.md"
+keywords = ["docker", "cleanup", "cli"]
+categories = ["command-line-utilities"]
 
 [[bin]]
 name = "dockerase"
