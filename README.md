@@ -15,7 +15,7 @@
 l_____j \___/  \____jl__j\_jl_____jl__j\_jl__j__j \___jl_____j
 ```
 
-A Docker cleaning utility CLI that helps you reclaim disk space by removing unused Docker resources.
+A Docker cleaning utility CLI that helps you reclaim disk space by removing unused Docker resources and macOS system caches.
 
 ## Installation
 
@@ -42,6 +42,8 @@ cargo install --path .
 
 ## Usage
 
+### Docker Cleanup
+
 ```bash
 # Show disk usage overview
 dockerase
@@ -55,6 +57,27 @@ dockerase select
 # Remove ALL Docker resources (nuclear option)
 dockerase --nuclear
 ```
+
+### System Cache Cleanup (macOS)
+
+```bash
+# List purgeable system caches with sizes
+dockerase system
+
+# Purge all system caches
+dockerase system purge
+
+# Interactively select which caches to purge
+dockerase system select
+```
+
+Supported caches:
+- Homebrew, npm, Yarn, pnpm
+- Cargo (registry & git)
+- Xcode (DerivedData & Archives)
+- pip, CocoaPods, Gradle, Maven
+- Go modules, Composer
+- Trash
 
 ### Flags
 
@@ -78,9 +101,17 @@ dockerase select --dry-run
 
 # Nuclear mode with confirmation skip
 dockerase --nuclear --force
+
+# Preview system cache cleanup
+dockerase system purge --dry-run
+
+# Interactively select system caches to purge
+dockerase system select
 ```
 
-## Output Example
+## Output Examples
+
+### Docker Space Usage
 
 ```
 Docker Space Usage
@@ -95,6 +126,21 @@ Docker Space Usage
 └───────────────────────────────────────┘
 
 Total Reclaimable: 6.4 GB
+```
+
+### System Caches
+
+```
+System Caches
+══════════════════════════════════════════════════
+│ CACHE            │ SIZE     │ PATH                              │
+│ Xcode DerivedData│ 8.2 GB   │ ~/Library/Developer/Xcode/...     │
+│ Homebrew         │ 2.1 GB   │ ~/Library/Caches/Homebrew         │
+│ npm              │ 1.4 GB   │ ~/.npm/_cacache                   │
+│ Cargo Registry   │ 890 MB   │ ~/.cargo/registry                 │
+│ Trash            │ 342 MB   │ ~/.Trash                          │
+
+Total Purgeable: 12.9 GB
 ```
 
 ## License

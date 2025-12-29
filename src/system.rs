@@ -147,8 +147,7 @@ pub fn purge_cache(cache: &CacheInfo) -> Result<u64, String> {
             for entry in fs::read_dir(&cache.path)
                 .map_err(|e| format!("Failed to read {}: {}", cache.path.display(), e))?
             {
-                let entry =
-                    entry.map_err(|e| format!("Failed to read entry in Trash: {}", e))?;
+                let entry = entry.map_err(|e| format!("Failed to read entry in Trash: {}", e))?;
                 let path = entry.path();
                 if path.is_dir() {
                     fs::remove_dir_all(&path)
@@ -194,4 +193,186 @@ fn dir_size(path: &PathBuf) -> Result<u64, std::io::Error> {
     }
 
     Ok(size)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::File;
+    use std::io::Write;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_get_home_dir() {
+        let home = get_home_dir();
+        assert!(home.is_some());
+        assert!(home.unwrap().exists());
+    }
+
+    #[test]
+    fn test_cache_info_non_existent_path() {
+        let cache = CacheInfo::new(
+            "TestCache",
+            PathBuf::from("/nonexistent/path/that/does/not/exist"),
+            "Test description",
+        );
+
+        assert_eq!(cache.name, "TestCache");
+        assert!(!cache.exists);
+        assert_eq!(cache.size, 0);
+        assert_eq!(cache.description, "Test description");
+    }
+
+    #[test]
+    fn test_cache_info_existing_path() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("test.txt");
+        let mut file = File::create(&file_path).unwrap();
+        writeln!(file, "Hello, world!").unwrap();
+
+        let cache = CacheInfo::new("TestCache", dir.path().to_path_buf(), "Test");
+
+        assert_eq!(cache.name, "TestCache");
+        assert!(cache.exists);
+        assert!(cache.size > 0);
+    }
+
+    #[test]
+    fn test_dir_size_empty_dir() {
+        let dir = tempdir().unwrap();
+        let size = dir_size(&dir.path().to_path_buf()).unwrap();
+        assert_eq!(size, 0);
+    }
+
+    #[test]
+    fn test_dir_size_with_file() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("test.txt");
+        let mut file = File::create(&file_path).unwrap();
+        write!(file, "12345").unwrap(); // 5 bytes
+
+        let size = dir_size(&dir.path().to_path_buf()).unwrap();
+        assert_eq!(size, 5);
+    }
+
+    #[test]
+    fn test_dir_size_nested() {
+        let dir = tempdir().unwrap();
+
+        // Create nested structure
+        let subdir = dir.path().join("subdir");
+        fs::create_dir(&subdir).unwrap();
+
+        let file1 = dir.path().join("file1.txt");
+        let file2 = subdir.join("file2.txt");
+
+        let mut f1 = File::create(&file1).unwrap();
+        write!(f1, "abc").unwrap(); // 3 bytes
+
+        let mut f2 = File::create(&file2).unwrap();
+        write!(f2, "defgh").unwrap(); // 5 bytes
+
+        let size = dir_size(&dir.path().to_path_buf()).unwrap();
+        assert_eq!(size, 8);
+    }
+
+    #[test]
+    fn test_dir_size_single_file() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("test.txt");
+        let mut file = File::create(&file_path).unwrap();
+        write!(file, "1234567890").unwrap(); // 10 bytes
+
+        let size = dir_size(&file_path).unwrap();
+        assert_eq!(size, 10);
+    }
+
+    #[test]
+    fn test_purge_cache_non_existent() {
+        let cache = CacheInfo {
+            name: "Test".to_string(),
+            path: PathBuf::from("/nonexistent"),
+            size: 0,
+            exists: false,
+            description: "Test".to_string(),
+        };
+
+        let result = purge_cache(&cache);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[test]
+    fn test_purge_cache_directory() {
+        let dir = tempdir().unwrap();
+        let cache_dir = dir.path().join("cache");
+        fs::create_dir(&cache_dir).unwrap();
+
+        let file_path = cache_dir.join("test.txt");
+        let mut file = File::create(&file_path).unwrap();
+        write!(file, "test data").unwrap();
+
+        let cache = CacheInfo {
+            name: "TestCache".to_string(),
+            path: cache_dir.clone(),
+            size: 9,
+            exists: true,
+            description: "Test".to_string(),
+        };
+
+        let result = purge_cache(&cache);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 9);
+
+        // Directory should be recreated but empty
+        assert!(cache_dir.exists());
+        assert!(fs::read_dir(&cache_dir).unwrap().next().is_none());
+    }
+
+    #[test]
+    fn test_purge_cache_trash_behavior() {
+        let dir = tempdir().unwrap();
+        let trash_dir = dir.path().join(".Trash");
+        fs::create_dir(&trash_dir).unwrap();
+
+        // Add files to "trash"
+        let file1 = trash_dir.join("file1.txt");
+        let subdir = trash_dir.join("subdir");
+        fs::create_dir(&subdir).unwrap();
+        let file2 = subdir.join("file2.txt");
+
+        File::create(&file1).unwrap();
+        File::create(&file2).unwrap();
+
+        let cache = CacheInfo {
+            name: "Trash".to_string(),
+            path: trash_dir.clone(),
+            size: 100,
+            exists: true,
+            description: "Test Trash".to_string(),
+        };
+
+        let result = purge_cache(&cache);
+        assert!(result.is_ok());
+
+        // Trash directory should still exist but be empty
+        assert!(trash_dir.exists());
+        assert!(fs::read_dir(&trash_dir).unwrap().next().is_none());
+    }
+
+    #[test]
+    fn test_discover_caches_returns_sorted() {
+        let caches = discover_caches();
+
+        // Verify sorted by size descending
+        for window in caches.windows(2) {
+            assert!(window[0].size >= window[1].size);
+        }
+
+        // All returned caches should exist and have size > 0
+        for cache in &caches {
+            assert!(cache.exists);
+            assert!(cache.size > 0);
+        }
+    }
 }
